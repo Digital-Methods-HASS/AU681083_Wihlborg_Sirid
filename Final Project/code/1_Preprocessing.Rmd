@@ -42,7 +42,7 @@ write.csv(df_grades, "../df/df_grades.csv")
 
 ```{r}
 # Loading the full dataset
-data_stress_raw <- read_csv("data/StudentLife/dataset/survey/PerceivedStressScale.csv")
+data_stress_raw <- read_csv("../data/StudentLife/dataset/survey/PerceivedStressScale.csv")
 
 # selecting only the "types=pre"
 data_stress <- data_stress_raw %>% filter(type == "pre")

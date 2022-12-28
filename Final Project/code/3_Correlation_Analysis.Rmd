@@ -10,14 +10,12 @@ knitr::opts_chunk$set(echo = TRUE)
 # Table of Content 
 
 1. Load data and packages
-2. Visualise correlations
-    2.1 Big5 and Stress
-    2.2 Big5 and Grades
-    2.3 Stress and Grades
-3. Combined Plots
-    3.1 Restructure data
-    3.2 Big5 and GPA
-    3.3 Big5 and Stress
+2. Visualise correlations  
+    2.1 Big5 and Grades  
+    2.2 Stress and Grades  
+3. Combined Plots  
+    3.1 Restructure data  
+    3.2 Big5 and GPA  
 4. Linear Regression
 
 ## 1. Load data and packages
@@ -37,32 +35,7 @@ df <- df %>% select(-2,-8,-10)
 
 ## 2. Visualise correlations
 
-### 2.1 Big5 and Stress
-
-```{r}
-# Create a vector of column names to loop through
-columns <- c("Extraversion", "Agreeableness", "Neuroticism", "Openness", "Conscientiousness")
-
-# Loop through the columns
-for (col in columns) {
-  
-  # Plot the data
-  df %>% 
-    ggplot(aes_string(col, "Perceived_Stress")) + 
-    geom_point() +
-    geom_smooth(method = "lm", se = FALSE, color = "red", size = 1.5) + 
-    ggtitle(paste(col, "and Perceived Stress")) +
-    labs(x = col, y = "Perceived Stress") +
-    theme_minimal() +
-    theme(plot.background = element_rect(fill = "white"),
-          text = element_text(size = 14),
-          axis.ticks = element_line(color = "grey"))
-  
-  # save the plots to directory
-  ggsave(paste0("plots/Stress_", col, ".png"), width = 8, height = 6)
-}
-```
-### 2.2 Big5 and Grades
+### 2.1 Big5 and Grades
 
 ```{r}
 # Create a vector of column names to loop through
@@ -87,7 +60,8 @@ for (col in columns) {
   ggsave(paste0("plots/GPA_", col, ".png"), width = 8, height = 6)
 }
 ```
-### 2.3 Stress and Grades
+
+### 2.2 Stress and Grades
 
 ```{r}
 # Plot the data
@@ -139,35 +113,6 @@ df_long %>%
 ggsave("plots/Combined_GPA_Big5.png", width = 8, height = 6)
 ```
 
-### 3.2 Big5 and Stress
-
-```{r}
-ggplot(df_long, aes(value, Perceived_Stress)) +
-  geom_smooth(aes(group = variable, color=variable), method = "lm", se = FALSE) +
-  scale_color_brewer(palette = "Dark2") +
-  theme_minimal() + 
-  ylim(2.5,4) +
-  ggtitle("Correlation between Perceived Stress Level and Personality Trades") +
-  labs(
-    subtitle = "Perceived Stress Level and Personality Trades extracted fromt the Big 5 questionnaire",
-    x = "Trade Score", 
-    y = "Perceived Stress Level", 
-    color = "Big 5 Trade:") +
-  theme(plot.background = element_rect(fill = "white"),
-        text = element_text(size = 12),
-        axis.ticks = element_line(color = "grey"))
-
-# save the plot
-ggsave("plots/Combined_Stress_Big5.png", width = 8, height = 6)
-```
-
-
-
-
-
-
-
-
 
 ## 4. Linear Regression
 
@@ -195,9 +140,6 @@ for (col in columns) {
 
 ```
 
-```{r}
-cor.test(df$GPA, df$Conscientiousness, method = "pearson")
-```
 
 
 
