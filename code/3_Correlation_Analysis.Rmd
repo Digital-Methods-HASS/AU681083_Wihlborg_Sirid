@@ -1,0 +1,204 @@
+---
+title: "3. Correlation Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Table of Content 
+
+1. Load data and packages
+2. Visualise correlations
+    2.1 Big5 and Stress
+    2.2 Big5 and Grades
+    2.3 Stress and Grades
+3. Combined Plots
+    3.1 Restructure data
+    3.2 Big5 and GPA
+    3.3 Big5 and Stress
+4. Linear Regression
+
+## 1. Load data and packages
+```{r}
+pacman::p_load(tidyverse, reshape2, RColorBrewer)
+
+df_big5 <- read_csv("../df/df_big5.csv")
+df_stress <- read_csv("../df/df_stress.csv")
+df_grades <- read_csv("../df/df_grades.csv")
+
+df <- merge(df_big5, df_stress, by = "ID")
+df <- merge(df, df_grades, by = "ID")
+
+# removing unnecessary columns
+df <- df %>% select(-2,-8,-10)
+```
+
+## 2. Visualise correlations
+
+### 2.1 Big5 and Stress
+
+```{r}
+# Create a vector of column names to loop through
+columns <- c("Extraversion", "Agreeableness", "Neuroticism", "Openness", "Conscientiousness")
+
+# Loop through the columns
+for (col in columns) {
+  
+  # Plot the data
+  df %>% 
+    ggplot(aes_string(col, "Perceived_Stress")) + 
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE, color = "red", size = 1.5) + 
+    ggtitle(paste(col, "and Perceived Stress")) +
+    labs(x = col, y = "Perceived Stress") +
+    theme_minimal() +
+    theme(plot.background = element_rect(fill = "white"),
+          text = element_text(size = 14),
+          axis.ticks = element_line(color = "grey"))
+  
+  # save the plots to directory
+  ggsave(paste0("plots/Stress_", col, ".png"), width = 8, height = 6)
+}
+```
+### 2.2 Big5 and Grades
+
+```{r}
+# Create a vector of column names to loop through
+columns <- c("Extraversion", "Agreeableness", "Neuroticism", "Openness", "Conscientiousness")
+
+# Loop through the columns
+for (col in columns) {
+  
+  # Plot the data
+  df %>% 
+    ggplot(aes_string(col, "GPA")) + 
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE, color = "blue", size = 1.5) + 
+    ggtitle(paste(col, "and GPA")) +
+    labs(x = col, y = "GPA") +
+    theme_minimal() +
+    theme(plot.background = element_rect(fill = "white"),
+          text = element_text(size = 14),
+          axis.ticks = element_line(color = "grey"))
+  
+  # save the plots to directory
+  ggsave(paste0("plots/GPA_", col, ".png"), width = 8, height = 6)
+}
+```
+### 2.3 Stress and Grades
+
+```{r}
+# Plot the data
+df %>% 
+  ggplot(aes(Perceived_Stress, GPA)) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "orange", size = 1.5) + 
+  ggtitle("Perceived Stress and GPA") +
+  labs(x = "Perceived Stress", y = "GPA") +
+  theme_minimal() +
+  theme(plot.background = element_rect(fill = "white"),
+        text = element_text(size = 14),
+        axis.ticks = element_line(color = "grey"))
+
+# save the plots to directory
+ggsave(paste0("plots/GPA_Stress.png"), width = 8, height = 6)
+
+```
+
+## 3. Combined Plots
+
+### 3.1 Restructure data
+```{r}
+# Reshape the data frame into a long format
+df_long <- melt(df, id.vars = c("ID", "GPA", "Perceived_Stress"), measure.vars = c("Extraversion", "Agreeableness", "Neuroticism", "Openness", "Conscientiousness"))
+```
+
+
+
+### 3.2 Big5 and GPA
+```{r}
+df_long %>% 
+  ggplot(aes(value, GPA)) +
+    geom_smooth(aes(group = variable, color=variable), method = "lm", se = FALSE) +
+    scale_color_brewer(palette = "Dark2") +
+    theme_minimal() + 
+    ylim(2.8,3.9) + 
+    ggtitle("Correlation between Academic Performance and Personality Trades") +
+    labs(
+      subtitle = "GPA Score and Personality Trades extracted fromt the Big 5 questionnaire",
+      x = "Trade Score", 
+      y = "GPA", 
+      color = "Big 5 Trade:") +
+    theme(plot.background = element_rect(fill = "white"),
+          text = element_text(size = 12),
+          axis.ticks = element_line(color = "grey"))
+
+# save the plot
+ggsave("plots/Combined_GPA_Big5.png", width = 8, height = 6)
+```
+
+### 3.2 Big5 and Stress
+
+```{r}
+ggplot(df_long, aes(value, Perceived_Stress)) +
+  geom_smooth(aes(group = variable, color=variable), method = "lm", se = FALSE) +
+  scale_color_brewer(palette = "Dark2") +
+  theme_minimal() + 
+  ylim(2.5,4) +
+  ggtitle("Correlation between Perceived Stress Level and Personality Trades") +
+  labs(
+    subtitle = "Perceived Stress Level and Personality Trades extracted fromt the Big 5 questionnaire",
+    x = "Trade Score", 
+    y = "Perceived Stress Level", 
+    color = "Big 5 Trade:") +
+  theme(plot.background = element_rect(fill = "white"),
+        text = element_text(size = 12),
+        axis.ticks = element_line(color = "grey"))
+
+# save the plot
+ggsave("plots/Combined_Stress_Big5.png", width = 8, height = 6)
+```
+
+
+
+
+
+
+
+
+
+## 4. Linear Regression
+
+Modelling GPA as dependent on Personality traits & Perceived stress levels
+```{r}
+# Create a vector of column names to loop through
+columns <- c("Extraversion", "Agreeableness", "Neuroticism", "Openness", "Conscientiousness", "Perceived_Stress")
+
+# fitting the linear model as well as checking assumptions
+for (col in columns) {
+  # Create a formula using the paste() and as.formula() functions
+  formula <- as.formula(paste("GPA ~", col))
+  fit <- lm(formula, data=df)
+  print(summary(fit))
+  
+  # checking the assumption of homoscedasticity
+  plot(fitted(fit), residuals(fit), xlab = "Fitted values", ylab = "Residuals")
+  abline(h = 0, col = "red")
+  
+  # checking the assumption of normality
+  qqnorm(residuals(fit), main = "Q-Q Plot of Residuals")
+  qqline(residuals(fit))
+}
+
+
+```
+
+```{r}
+cor.test(df$GPA, df$Conscientiousness, method = "pearson")
+```
+
+
+
+

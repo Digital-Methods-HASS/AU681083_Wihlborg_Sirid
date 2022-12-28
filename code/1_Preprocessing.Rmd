@@ -1,0 +1,100 @@
+---
+title: "1. Preprocessing"
+author: "Sirid Wihlborg"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(tidyverse)
+```
+
+# Table of Content
+
+1. Description of data
+2. Cleaning the academic performance data
+3. Creating a single measure for perceived stress level
+
+## 1. Description of data
+
+All the data is contained within the folder: "dataset" with the path: ../data/StudentLife/dataset. This folder includes: EMA, calendar, dinning, sensing, survey, app_usage, call_log, education, sms.
+
+
+## 2. Cleaning the academic performance data
+
+```{r}
+# Load the data
+data_grades_raw <- read_csv("../data/StudentLife/dataset/education/grades.csv")
+
+# selecting the two first columns
+df_grades <- data_grades_raw %>% select(1, 2)
+
+# renaming columns
+df_grades <- rename(df_grades, "ID" = "uid", "GPA" = `gpa all`)
+
+# Display and Export new data frame to directory
+df_grades
+
+write.csv(df_grades, "../df/df_grades.csv")
+```
+
+## 3. Creating a single measure for perceived stress level
+
+```{r}
+# Loading the full dataset
+data_stress_raw <- read_csv("data/StudentLife/dataset/survey/PerceivedStressScale.csv")
+
+# selecting only the "types=pre"
+data_stress <- data_stress_raw %>% filter(type == "pre")
+
+# find unique values in columns 
+unique(data_stress$`1. In the last month, how often have you been upset because of something that happened unexpectedly?`)
+
+# replace all missing values with "Sometime" (this should be discussed)
+data_stress <- data_stress %>% mutate_all(funs(if_else(is.na(.), "Sometime", .)))
+sum(is.na(data_stress)) # make sure there are no missing values left
+```
+
+Obs: before continuing, it's important to check the "direction" of the questions, ie., is the question phrased as such that an "agree" indicates a high or low stress level?
+Based on visually inspecting the columns, it is found that for question 1,2,3,6,9,10 an "agree" would indicate high stress level, where for question 4,5,7,8 it would indicate low stress level. 
+
+Theefor the values has been converted into numeric values in the following way: 
+
+```{r}
+# converting to numeriv values for the questions in one direction
+data_stress <- data_stress %>% mutate_at(vars(3,4,5,8,11,12), funs(if_else(. == "Never", "1", .))) # obs: remember that the first two columns are demographic info
+data_stress <- data_stress %>% mutate_at(vars(3,4,5,8,11,12), funs(if_else(. == "Almost never", "2", .)))
+data_stress <- data_stress %>% mutate_at(vars(3,4,5,8,11,12), funs(if_else(. == "Sometime", "3", .)))
+data_stress <- data_stress %>% mutate_at(vars(3,4,5,8,11,12), funs(if_else(. == "Fairly often", "4", .)))
+data_stress <- data_stress %>% mutate_at(vars(3,4,5,8,11,12), funs(if_else(. == "Very often", "5", .)))
+
+# converting to numeriv values for the questions in the other direction
+data_stress <- data_stress %>% mutate_at(vars(6,7,9,10), funs(if_else(. == "Never", "1", .)))
+data_stress <- data_stress %>% mutate_at(vars(6,7,9,10), funs(if_else(. == "Almost never", "2", .)))
+data_stress <- data_stress %>% mutate_at(vars(6,7,9,10), funs(if_else(. == "Sometime", "3", .)))
+data_stress <- data_stress %>% mutate_at(vars(6,7,9,10), funs(if_else(. == "Fairly often", "4", .)))
+data_stress <- data_stress %>% mutate_at(vars(6,7,9,10), funs(if_else(. == "Very often", "5", .)))
+
+# convert all values from questions from character to numeric
+data_stress <- data_stress %>% 
+  mutate_at(vars(c(3:12)), funs(as.numeric(.)))
+```
+
+```{r}
+# create a column with the mean score
+data_stress <- data_stress %>%
+  mutate(Perceived_Stress = rowMeans(data_stress[, 3:12]))
+
+# renaming columns
+data_stress <- rename(data_stress, "ID" = "uid")
+
+# selecting columns to use
+df_stress <- data_stress %>% select("ID", "Perceived_Stress")
+
+# exporting data frame
+write.csv(df_stress, "../df/df_stress.csv")
+```
+
+
+
+

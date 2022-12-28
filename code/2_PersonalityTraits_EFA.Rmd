@@ -1,0 +1,143 @@
+---
+title: "2. Exploratory Factor Analysis: Personality Traits"
+author: "Sirid Wihlborg"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(tidyverse, psych)
+```
+
+# Table of Content
+1. Data Cleaning
+2. Create correlation matrix
+3. perform PCA
+4. Merge with ID
+5. Display and Export new dataframe to directory
+
+# 1. Data Cleaning
+```{r}
+# Loading the full dataset
+data_big5_raw <- read_csv("../data/StudentLife/dataset/survey/BigFive.csv")
+
+
+# selecting only the "types=pre"
+data_big5 <- data_big5_raw %>% filter(type == "pre")
+
+# disselecting the two first demographic rows
+data_big5 <- data_big5 %>% select(-1, -2)
+
+  
+# find unique values in columns 
+unique(data_big5$`I see myself as someone who...   - 1. Is talkative`)
+
+# replacing character string with numeric value
+data_big5 <- data_big5 %>% mutate_all(funs(if_else(. == "Disagree Strongly", "1", .)))
+data_big5 <- data_big5 %>% mutate_all(funs(if_else(. == "Disagree a little", "2", .)))
+data_big5 <- data_big5 %>% mutate_all(funs(if_else(. == "Neither agree nor disagree", "3", .)))
+data_big5 <- data_big5 %>% mutate_all(funs(if_else(. == "Agree a little", "4", .)))
+data_big5 <- data_big5 %>% mutate_all(funs(if_else(. == "Agree strongly", "5", .)))
+
+# convert all values from character to numeric
+data_big5 <- data_big5 %>% mutate_all(funs(as.numeric(.)))
+
+# replace all missing values with 3  (this shoud be discussed)
+sum(is.na(data_big5)) # first count amount of missing values 
+
+data_big5 <- data_big5 %>% mutate_all(funs(if_else(is.na(.), 3, .)))
+
+sum(is.na(data_big5)) # make sure there are none left
+```
+
+
+# 2. Create correlation matrix
+```{r}
+# create a heatmap
+heatmap(cor(data_big5))
+```
+# 3. perform PCA
+```{r}
+fa.parallel(data_big5, fa="fa") # scree plot # 9 factors
+fa_big5 <- fa(data_big5, 5, rotate="varimax")
+print(fa_big5$loadings, cutoff=0.4)
+```
+
+MR2: 
+Does a thorough job                            0.690
+Is a reliable worker                           0.787
+Tends to be disorganized                      -0.615
+Tends to be lazy                              -0.694
+Perseveres until the task is finished          0.654
+Does things efficiently                        0.535
+Makes plans and follows through with them      0.707
+Is easily distracted                          -0.570
+
+MR1: 
+Tends to find fault with others                 0.658
+Is relaxed, handles stress well.               -0.588
+Worries a lot                                  0.680
+Is emotionally stable, not easily upset       -0.508
+Can be moody                                   0.700
+
+
+MR5: 
+Is talkative                                   -0.614
+Is reserved                                     0.797
+Tends to be quiet                              0.799
+Has an assertive personality                  -0.532
+Is sometimes shy, inhibited                    0.679
+Is outgoing, sociable                         -0.688
+
+
+MR3: 
+Is original, comes up with new ideas            0.806
+Is curious about many different things         0.580
+Is ingenious, a deep thinker                   0.608
+Has an active imagination                      0.607
+
+MR4:
+Is helpful and unselfish with others            0.566
+Has a forgiving nature                         0.587
+Is generally trusting                          0.530
+Values artistic, aesthetic experiences         0.619
+Is considerate and kind to almost everyone     0.780
+
+
+
+The Big 5 Trades are: Openness, Conscientiousness, Extraversion, Agreeableness, and Neuroticism
+
+MR1 = Neuroticism
+MR2 = Conscientiousness
+MR3 = Openness
+MR4 = Agreeableness
+MR5 = Extraversion (inverted)
+
+
+# 4. Merge with ID
+```{r}
+fa_big5$scores
+
+df_big5 <- cbind(data_big5_raw$uid, fa_big5$scores)
+df_big5 <- as.data.frame(df_big5)
+df_big5[,-1] <- lapply(df_big5[,-1], as.numeric) # make all values numeric (except the ID)
+
+df_big5 <- rename(df_big5, "ID" = "V1", "Neuroticism" = "MR1", "Conscientiousness" = "MR2", "Openness" = "MR3", "Agreeableness" = "MR4", "Extraversion" = "MR5")
+
+# obs: as the Extraversion column is inverted, we'll just changed the signs of the values in that column
+df_big5$Extraversion <- (df_big5$Extraversion)*-1
+```
+
+# 5. Display and Export new dataframe to directory
+```{r}
+df_big5
+
+write.csv(df_big5, "../df/df_big5.csv")
+```
+
+
+
+
+
+
+
